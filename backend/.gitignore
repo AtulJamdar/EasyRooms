@@ -1,0 +1,55 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+build/
+dist/
+.next/
+out/
+
+# Logs
+logs
+*.log
+*.log.*
+coverage/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# MongoDB data dumps
+dump/
+*.bson
+*.json
+
+# Testing
+coverage/
+jest-cache/
+jest-output/
+test-results/
+
+# React specific
+*.cache
+*.eslintcache
+
+# Misc
+*.tgz
