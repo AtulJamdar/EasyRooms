@@ -12,6 +12,16 @@ const roomRequirementSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    title: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     preferredArea: {
       type: String,
       trim: true,

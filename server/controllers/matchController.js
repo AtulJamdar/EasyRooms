@@ -84,6 +84,52 @@ const getMatches = async (req, res, next) => {
   }
 };
 
+/**
+ * Get top matches (existing logic) and optionally apply AI ranking.
+ */
+const getMatchesAI = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Ensure user can only request their own matches (unless admin)
+    if (req.user._id.toString() !== userId && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to view matches for this user' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const candidates = await User.find({ _id: { $ne: user._id } }).select('-password -__v');
+
+    const ranked = candidates
+      .map((candidate) => {
+        const score = calculateCompatibilityScore(user, candidate);
+        return {
+          user: candidate,
+          score,
+        };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
+
+    // If AI ranking is enabled, return AI-sorted results for the top matches.
+    // Otherwise, return the standard ranked results.
+    if (process.env.GROK_API_KEY) {
+      const grokService = require('../services/grokService');
+      const aiRanked = await grokService.rankMatchesWithAI(user, ranked.slice(0, 5));
+      return res.json({ matches: aiRanked });
+    }
+
+    res.json({ matches: ranked });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMatches,
+  getMatchesAI,
 };

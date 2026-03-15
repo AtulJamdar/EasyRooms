@@ -13,10 +13,12 @@ const createRequirement = async (req, res, next) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { preferredArea, maxRent, genderPreference, moveInDate } = req.body;
+    const { title, description, preferredArea, maxRent, genderPreference, moveInDate } = req.body;
 
     const requirement = await RoomRequirement.create({
       user: req.user._id,
+      title: title || '',
+      description: description || '',
       preferredArea,
       maxRent,
       genderPreference,

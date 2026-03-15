@@ -54,4 +54,7 @@ const roomPostSchema = new mongoose.Schema(
   }
 );
 
+// Automatically delete room posts after 30 days
+roomPostSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+
 module.exports = mongoose.model('RoomPost', roomPostSchema);

@@ -45,6 +45,24 @@ You can verify the server is running by visiting:
 http://localhost:5000/api/health
 ```
 
+## Running the Frontend (React)
+
+From a new terminal, start the frontend dev server:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Then open:
+
+```
+http://localhost:3000
+```
+
+The frontend will authenticate against the backend (default: `http://localhost:5000`).
+
 ## Next Steps
 
 1. Setup backend environment and dependencies.

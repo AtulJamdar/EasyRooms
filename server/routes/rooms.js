@@ -3,10 +3,12 @@ const { body } = require('express-validator');
 const {
   createRoom,
   getAllRooms,
+  getMyRooms,
   searchRooms,
   getRoomById,
   updateRoom,
   deleteRoom,
+  reportRoom,
 } = require('../controllers/roomController');
 const { protect } = require('../middleware/auth');
 
@@ -36,6 +38,11 @@ router.post(
 router.get('/', getAllRooms);
 
 /**
+ * Private: Get rooms posted by the authenticated user
+ */
+router.get('/mine', protect, getMyRooms);
+
+/**
  * Public: Search rooms
  */
 router.get('/search', searchRooms);
@@ -44,6 +51,11 @@ router.get('/search', searchRooms);
  * Public: Get single room by ID
  */
 router.get('/:id', getRoomById);
+
+/**
+ * Private: Report a room listing
+ */
+router.post('/:id/report', protect, reportRoom);
 
 /**
  * Update room (owner or admin)

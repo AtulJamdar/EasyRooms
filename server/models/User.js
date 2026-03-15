@@ -28,6 +28,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    whatsapp: {
+      type: String,
+      trim: true,
+      description: 'WhatsApp phone number for optional notifications',
+    },
     college: {
       type: String,
       trim: true,
@@ -53,10 +58,23 @@ const userSchema = new mongoose.Schema(
       default: [],
       description: 'Array of keywords describing lifestyle preferences (e.g., quiet, party, early-riser)',
     },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+      description: 'User role controlling access to admin features',
+    },
     isAdmin: {
       type: Boolean,
       default: false,
-      description: 'Flag used to grant admin access for moderation features',
+      description: 'Flag used to grant admin access for moderation features; kept for backward compatibility',
+    },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+      description: 'Whether the user is blocked from logging in or posting',
     },
   },
   {
@@ -73,6 +91,9 @@ const userSchema = new mongoose.Schema(
 
 // Hash password before saving if it has been modified
 userSchema.pre('save', async function () {
+  // Keep isAdmin in sync with role for legacy checks.
+  this.isAdmin = this.role === 'admin';
+
   if (!this.isModified('password')) {
     return;
   }

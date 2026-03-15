@@ -7,9 +7,11 @@ const rateLimit = require('express-rate-limit');
 
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
+const usersRoutes = require('./routes/users');
 const roomsRoutes = require('./routes/rooms');
 const requirementsRoutes = require('./routes/requirements');
 const matchesRoutes = require('./routes/matches');
+const adminRoutes = require('./routes/admin');
 const errorHandler = require('./middleware/errorHandler');
 
 // Initialize Express app
@@ -53,9 +55,11 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/rooms', roomsRoutes);
 app.use('/api/requirements', requirementsRoutes);
 app.use('/api/matches', matchesRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handler (should be last middleware)
 app.use(errorHandler);

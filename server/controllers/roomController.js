@@ -1,6 +1,8 @@
 const { validationResult } = require('express-validator');
 const RoomPost = require('../models/RoomPost');
+const Report = require('../models/Report');
 const { findMatchingRequirements } = require('../services/requirementMatcher');
+const { notifyMatch } = require('../services/notificationService');
 
 /**
  * @route   POST /api/rooms
@@ -33,11 +35,17 @@ const createRoom = async (req, res, next) => {
       postedBy: req.user._id,
     });
 
-    // Find saved requirements that match this new room post (for future notifications)
+    // Find saved requirements that match this new room post and send email notifications.
     const matches = await findMatchingRequirements(room);
     if (matches.length > 0) {
-      // In a full system, we'd send notifications (email/WhatsApp) here.
       console.log(`✅ Found ${matches.length} saved requirement(s) matching this room`);
+      await Promise.all(
+        matches.map(async (match) => {
+          const user = match.user;
+          if (!user) return;
+          await notifyMatch(user, room);
+        })
+      );
     }
 
     return res.status(201).json(room);
@@ -54,10 +62,68 @@ const createRoom = async (req, res, next) => {
 const getAllRooms = async (req, res, next) => {
   try {
     const rooms = await RoomPost.find({ isActive: true })
-      .populate('postedBy', 'name email college')
+      .populate('postedBy', 'name email college phone')
       .sort({ createdAt: -1 });
 
     res.json(rooms);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   GET /api/rooms/mine
+ * @desc    Get room listings created by the authenticated user
+ * @access  Private
+ */
+const getMyRooms = async (req, res, next) => {
+  try {
+    const rooms = await RoomPost.find({ postedBy: req.user._id })
+      .populate('postedBy', 'name email college phone')
+      .sort({ createdAt: -1 });
+
+    res.json({ rooms });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/rooms/:id/report
+ * @desc    Report a room listing for inappropriate content
+ * @access  Private
+ */
+const reportRoom = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ message: 'Reason for report is required' });
+    }
+
+    const room = await RoomPost.findById(id);
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    const alreadyReported = await Report.findOne({
+      reportedPost: id,
+      reportedBy: req.user._id,
+      isResolved: false,
+    });
+
+    if (alreadyReported) {
+      return res.status(409).json({ message: 'You have already reported this listing' });
+    }
+
+    const report = await Report.create({
+      reportedPost: id,
+      reason,
+      reportedBy: req.user._id,
+    });
+
+    res.status(201).json({ report });
   } catch (error) {
     next(error);
   }
@@ -70,11 +136,13 @@ const getAllRooms = async (req, res, next) => {
  */
 const searchRooms = async (req, res, next) => {
   try {
-    const { location, minRent, maxRent, roommatesNeeded } = req.query;
-    const filters = { isActive: true };
+const { location, query, minRent, maxRent, roommatesNeeded } = req.query;
+  const filters = { isActive: true };
 
-    if (location) {
-      filters.location = { $regex: location, $options: 'i' };
+  // Allow searching by `query` (generic term) or `location`.
+  const searchTerm = query || location;
+  if (searchTerm) {
+    filters.location = { $regex: searchTerm, $options: 'i' };
     }
 
     if (minRent) {
@@ -90,7 +158,7 @@ const searchRooms = async (req, res, next) => {
     }
 
     const rooms = await RoomPost.find(filters)
-      .populate('postedBy', 'name email college')
+      .populate('postedBy', 'name email college phone')
       .sort({ createdAt: -1 });
 
     res.json(rooms);
@@ -108,7 +176,7 @@ const getRoomById = async (req, res, next) => {
   try {
     const room = await RoomPost.findById(req.params.id).populate(
       'postedBy',
-      'name email college'
+      'name email college phone'
     );
 
     if (!room || !room.isActive) {
@@ -199,8 +267,10 @@ const deleteRoom = async (req, res, next) => {
 module.exports = {
   createRoom,
   getAllRooms,
+  getMyRooms,
   searchRooms,
   getRoomById,
   updateRoom,
   deleteRoom,
+  reportRoom,
 };
