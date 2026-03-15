@@ -192,22 +192,20 @@ export default function AdminDashboardPage() {
                                                     <button
                                                         onClick={() => handleDeleteReportedPost(report._id)}
                                                         disabled={actionLoading[`delete-${report._id}`]}
-                                                        className={`rounded-md px-3 py-2 text-sm font-semibold ${
-                                                            actionLoading[`delete-${report._id}`]
+                                                        className={`rounded-md px-3 py-2 text-sm font-semibold ${actionLoading[`delete-${report._id}`]
                                                                 ? 'bg-rose-600/20 text-rose-200 cursor-not-allowed'
                                                                 : 'bg-rose-600/30 text-rose-100 hover:bg-rose-600/60'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {actionLoading[`delete-${report._id}`] ? 'Deleting…' : 'Delete post'}
                                                     </button>
                                                     <button
                                                         onClick={() => handleBlockReporter(report._id)}
                                                         disabled={actionLoading[`block-${report._id}`]}
-                                                        className={`rounded-md px-3 py-2 text-sm font-semibold ${
-                                                            actionLoading[`block-${report._id}`]
+                                                        className={`rounded-md px-3 py-2 text-sm font-semibold ${actionLoading[`block-${report._id}`]
                                                                 ? 'bg-yellow-500/20 text-amber-200 cursor-not-allowed'
                                                                 : 'bg-yellow-500/30 text-amber-100 hover:bg-yellow-500/60'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {actionLoading[`block-${report._id}`] ? 'Blocking…' : 'Block reporter'}
                                                     </button>
@@ -215,11 +213,10 @@ export default function AdminDashboardPage() {
                                                         <button
                                                             onClick={() => handleResolveReport(report._id)}
                                                             disabled={actionLoading[`resolve-${report._id}`]}
-                                                            className={`rounded-md px-3 py-2 text-sm font-semibold ${
-                                                                actionLoading[`resolve-${report._id}`]
+                                                            className={`rounded-md px-3 py-2 text-sm font-semibold ${actionLoading[`resolve-${report._id}`]
                                                                     ? 'bg-slate-600/20 text-slate-200 cursor-not-allowed'
                                                                     : 'bg-slate-600/30 text-slate-100 hover:bg-slate-600/60'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {actionLoading[`resolve-${report._id}`] ? 'Resolving…' : 'Mark resolved'}
                                                         </button>

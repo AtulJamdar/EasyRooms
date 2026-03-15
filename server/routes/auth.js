@@ -1,9 +1,19 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { body } = require('express-validator');
 const { register, login, getProfile, updateProfile, sendPasswordResetToken, resetPassword } = require('../controllers/authController');
 
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+
+// Limit how often a client can request password resets to prevent abuse.
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // limit each IP to 5 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many password reset requests. Please try again later.' },
+});
 
 /**
  * @route POST /api/auth/register
@@ -39,6 +49,7 @@ router.post(
  */
 router.post(
   '/forgot-password',
+  forgotPasswordLimiter,
   [body('email').isEmail().withMessage('Valid email is required')],
   sendPasswordResetToken
 );

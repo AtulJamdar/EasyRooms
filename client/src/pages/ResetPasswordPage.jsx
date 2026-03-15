@@ -27,7 +27,14 @@ export default function ResetPasswordPage() {
             setStatus({ type: 'success', message: 'Password has been reset. Redirecting to login…' });
             setTimeout(() => navigate('/login'), 1800);
         } catch (err) {
-            setStatus({ type: 'error', message: err?.response?.data?.message || 'Failed to reset password' });
+            const message = err?.response?.data?.message || 'Failed to reset password';
+            const isTokenInvalid = /invalid|expired/i.test(message);
+
+            setStatus({
+                type: 'error',
+                message,
+                isTokenInvalid,
+            });
         }
     };
 
@@ -67,7 +74,21 @@ export default function ResetPasswordPage() {
                                 : 'bg-slate-700/30 text-slate-100'
                         }`}
                     >
-                        {status.message}
+                        <p>{status.message}</p>
+                        {status.isTokenInvalid && (
+                            <div className="mt-3 rounded-lg bg-white/20 p-3 text-xs text-slate-100">
+                                <p>
+                                    It looks like the link is invalid or has expired. You can request a new reset link below.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/forgot-password')}
+                                    className="mt-3 inline-flex items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-400"
+                                >
+                                    Request a new reset link
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>
