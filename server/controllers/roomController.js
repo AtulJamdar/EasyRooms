@@ -4,6 +4,19 @@ const Report = require('../models/Report');
 const { findMatchingRequirements } = require('../services/requirementMatcher');
 const { notifyMatch } = require('../services/notificationService');
 
+// Get rooms posted by a specific user (public)
+const getRoomsByUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const rooms = await RoomPost.find({ postedBy: userId, isActive: true })
+      .populate('postedBy', 'name email college phone')
+      .sort({ createdAt: -1 });
+    res.json({ rooms });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * @route   POST /api/rooms
  * @desc    Create a new room listing
@@ -268,6 +281,7 @@ module.exports = {
   createRoom,
   getAllRooms,
   getMyRooms,
+  getRoomsByUser,
   searchRooms,
   getRoomById,
   updateRoom,

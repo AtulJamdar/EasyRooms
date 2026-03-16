@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import api from '../services/api';
 
@@ -97,16 +98,34 @@ export default function SearchRoomsPage() {
                 <div className="mt-8 grid gap-6 md:grid-cols-2">
                     {results.map((room) => (
                         <div key={room._id} className="rounded-2xl border border-white/10 bg-slate-900/40 p-6 shadow-lg backdrop-blur">
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="flex-1">
+                                    {room.images?.length > 0 && (
+                                        <div className="mb-4 overflow-hidden rounded-xl">
+                                            <img
+                                                src={room.images[0]}
+                                                alt={room.title}
+                                                className="h-40 w-full object-cover"
+                                            />
+                                        </div>
+                                    )}
                                     <h2 className="text-lg font-semibold">{room.title}</h2>
                                     <p className="text-sm text-slate-300">{room.location}</p>
+                                    <p className="mt-3 text-sm text-slate-300">{room.description}</p>
                                 </div>
-                                <div className="rounded-full bg-indigo-500/30 px-4 py-2 text-xs font-semibold text-indigo-100">
-                                    ₹{room.rent}
+
+                                <div className="flex flex-col gap-3">
+                                    <div className="rounded-full bg-indigo-500/30 px-4 py-2 text-xs font-semibold text-indigo-100">
+                                        ₹{room.rent}
+                                    </div>
+                                    <Link
+                                        to={`/rooms/${room._id}`}
+                                        className="rounded-md bg-indigo-500/20 px-3 py-2 text-sm font-semibold text-indigo-100 hover:bg-indigo-500/40"
+                                    >
+                                        View details
+                                    </Link>
                                 </div>
                             </div>
-                            <p className="mt-4 text-sm text-slate-300">{room.description}</p>
 
                             <div className="mt-4 flex flex-col gap-3">
                                 <button

@@ -4,9 +4,34 @@ import api from '../services/api';
 
 export default function PostRoomPage() {
     const [form, setForm] = useState({ title: '', description: '', rent: '', location: '', numberOfRoommatesNeeded: 1 });
+    const [images, setImages] = useState([]);
     const [status, setStatus] = useState(null);
 
     const onChange = (e) => setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
+
+    const handleImageChange = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const toBase64 = (file) =>
+            new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+        try {
+            const encoded = await Promise.all(files.map(toBase64));
+            setImages((prev) => [...prev, ...encoded].slice(0, 5));
+        } catch (err) {
+            console.error('Failed to read images', err);
+        }
+    };
+
+    const removeImage = (index) => {
+        setImages((prev) => prev.filter((_, i) => i !== index));
+    };
 
     const onSubmit = async (e) => {
         e.preventDefault();
@@ -18,9 +43,11 @@ export default function PostRoomPage() {
                 rent: Number(form.rent),
                 location: form.location,
                 numberOfRoommatesNeeded: Number(form.numberOfRoommatesNeeded) || 1,
+                images,
             });
             setStatus({ type: 'success', message: 'Room posted successfully.' });
             setForm({ title: '', description: '', rent: '', location: '', numberOfRoommatesNeeded: 1 });
+            setImages([]);
         } catch (err) {
             setStatus({ type: 'error', message: err?.response?.data?.message || 'Failed to post room.' });
         }
@@ -90,6 +117,34 @@ export default function PostRoomPage() {
                             className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                     </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300">Photos (optional)</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageChange}
+                            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        />
+                        {images.length > 0 && (
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                                {images.map((src, idx) => (
+                                    <div key={idx} className="relative">
+                                        <img src={src} alt={`Room photo ${idx + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeImage(idx)}
+                                            className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-1 text-xs text-white"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-slate-300">Description</label>
                         <textarea

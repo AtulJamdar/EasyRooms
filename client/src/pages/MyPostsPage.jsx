@@ -50,10 +50,10 @@ export default function MyPostsPage() {
                 {status && (
                     <div
                         className={`mt-6 rounded-lg px-4 py-3 text-sm ${status.type === 'error'
-                                ? 'bg-rose-600/30 text-rose-100'
-                                : status.type === 'success'
-                                    ? 'bg-emerald-600/30 text-emerald-100'
-                                    : 'bg-slate-700/40 text-slate-100'
+                            ? 'bg-rose-600/30 text-rose-100'
+                            : status.type === 'success'
+                                ? 'bg-emerald-600/30 text-emerald-100'
+                                : 'bg-slate-700/40 text-slate-100'
                             }`}
                     >
                         {status.message}
@@ -80,6 +80,15 @@ export default function MyPostsPage() {
                                 key={room._id}
                                 className="rounded-2xl border border-white/10 bg-slate-900/40 p-6 shadow-lg backdrop-blur"
                             >
+                                {room.images?.length > 0 && (
+                                    <div className="mb-4 overflow-hidden rounded-xl">
+                                        <img
+                                            src={room.images[0]}
+                                            alt={room.title}
+                                            className="h-40 w-full object-cover"
+                                        />
+                                    </div>
+                                )}
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
                                         <h2 className="text-lg font-semibold">{room.title}</h2>

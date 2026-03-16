@@ -4,6 +4,7 @@ const {
   createRoom,
   getAllRooms,
   getMyRooms,
+  getRoomsByUser,
   searchRooms,
   getRoomById,
   updateRoom,
@@ -36,6 +37,11 @@ router.post(
  * Public: Get all active rooms
  */
 router.get('/', getAllRooms);
+
+/**
+ * Public: Get all active rooms posted by a specific user
+ */
+router.get('/user/:userId', getRoomsByUser);
 
 /**
  * Private: Get rooms posted by the authenticated user

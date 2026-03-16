@@ -8,6 +8,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import PostRoomPage from './pages/PostRoomPage';
 import SearchRoomsPage from './pages/SearchRoomsPage';
+import RoomDetailPage from './pages/RoomDetailPage';
 import MyPostsPage from './pages/MyPostsPage';
 import SavedRequirementsPage from './pages/SavedRequirementsPage';
 import NotificationsPage from './pages/NotificationsPage';
@@ -15,6 +16,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ContactPage from './pages/ContactPage';
+import UserRoomsPage from './pages/UserRoomsPage';
 import api, { setAuthToken } from './services/api';
 
 function ProtectedRoute({ children }) {
@@ -98,6 +100,22 @@ export default function App() {
                     element={
                         <ProtectedRoute>
                             <SearchRoomsPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/rooms/:id"
+                    element={
+                        <ProtectedRoute>
+                            <RoomDetailPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/users/:id/rooms"
+                    element={
+                        <ProtectedRoute>
+                            <UserRoomsPage />
                         </ProtectedRoute>
                     }
                 />

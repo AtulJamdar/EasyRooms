@@ -68,10 +68,10 @@ export default function ResetPasswordPage() {
 
                 {status && (
                     <div className={`mt-6 rounded-xl p-4 text-sm ${status.type === 'error'
-                            ? 'bg-rose-600/30 text-rose-100'
-                            : status.type === 'success'
-                                ? 'bg-emerald-600/30 text-emerald-100'
-                                : 'bg-slate-700/30 text-slate-100'
+                        ? 'bg-rose-600/30 text-rose-100'
+                        : status.type === 'success'
+                            ? 'bg-emerald-600/30 text-emerald-100'
+                            : 'bg-slate-700/30 text-slate-100'
                         }`}
                     >
                         <p>{status.message}</p>

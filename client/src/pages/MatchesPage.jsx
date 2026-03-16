@@ -124,6 +124,15 @@ export default function MatchesPage() {
                                         </div>
                                     )}
                                 </div>
+
+                                <div className="mt-6 flex flex-col gap-2">
+                                    <Link
+                                        to={`/users/${user._id}/rooms`}
+                                        className="rounded-md bg-indigo-500/20 px-3 py-2 text-sm font-semibold text-indigo-100 hover:bg-indigo-500/40"
+                                    >
+                                        View their room listings
+                                    </Link>
+                                </div>
                             </div>
                         ))}
                     </div>
