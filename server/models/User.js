@@ -6,109 +6,111 @@ const mongoose = require('mongoose');
  * Fields include basic profile information and preferences that will
  * be useful for roommate matching and room recommendations.
  */
-const userSchema = new mongoose.Schema(
-  {
+const userSchema = new mongoose.Schema({
     name: {
-      type: String,
-      required: [true, 'Name is required'],
-      trim: true,
+        type: String,
+        required: [true, 'Name is required'],
+        trim: true,
     },
     email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-      lowercase: true,
-      trim: true,
+        type: String,
+        required: [true, 'Email is required'],
+        unique: true,
+        lowercase: true,
+        trim: true,
     },
     password: {
-      type: String,
-      required: [true, 'Password is required'],
+        type: String,
+        required: [true, 'Password is required'],
     },
     phone: {
-      type: String,
-      trim: true,
+        type: String,
+        trim: true,
     },
     whatsapp: {
-      type: String,
-      trim: true,
-      description: 'WhatsApp phone number for optional notifications',
+        type: String,
+        trim: true,
+        description: 'WhatsApp phone number for optional notifications',
     },
     college: {
-      type: String,
-      trim: true,
+        type: String,
+        trim: true,
     },
     course: {
-      type: String,
-      trim: true,
+        type: String,
+        trim: true,
     },
     year: {
-      type: String,
-      trim: true,
+        type: String,
+        trim: true,
     },
     gender: {
-      type: String,
-      enum: ['male', 'female', 'other'],
+        type: String,
+        enum: ['male', 'female', 'other'],
     },
     budget: {
-      type: Number,
-      min: 0,
+        type: Number,
+        min: 0,
     },
     lifestyleHabits: {
-      type: [String],
-      default: [],
-      description: 'Array of keywords describing lifestyle preferences (e.g., quiet, party, early-riser)',
+        type: [String],
+        default: [],
+        description: 'Array of keywords describing lifestyle preferences (e.g., quiet, party, early-riser)',
     },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
     role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
-      description: 'User role controlling access to admin features',
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user',
+        description: 'User role controlling access to admin features',
     },
     isAdmin: {
-      type: Boolean,
-      default: false,
-      description: 'Flag used to grant admin access for moderation features; kept for backward compatibility',
+        type: Boolean,
+        default: false,
+        description: 'Flag used to grant admin access for moderation features; kept for backward compatibility',
+    },
+    intent: {
+        type: String,
+        enum: ["room", "roommate", "owner"],
+        default: "roommate" // Or "room" depending on your preference
     },
     isBlocked: {
-      type: Boolean,
-      default: false,
-      description: 'Whether the user is blocked from logging in or posting',
+        type: Boolean,
+        default: false,
+        description: 'Whether the user is blocked from logging in or posting',
     },
-  },
-  {
+}, {
     timestamps: true,
     toJSON: {
-      transform(doc, ret) {
-        delete ret.password;
-        delete ret.__v;
-        return ret;
-      },
+        transform(doc, ret) {
+            delete ret.password;
+            delete ret.__v;
+            return ret;
+        },
     },
-  }
-);
+});
 
 // Hash password before saving if it has been modified
-userSchema.pre('save', async function () {
-  // Keep isAdmin in sync with role for legacy checks.
-  this.isAdmin = this.role === 'admin';
+userSchema.pre('save', async function() {
+    // Keep isAdmin in sync with role for legacy checks.
+    this.isAdmin = this.role === 'admin';
 
-  if (!this.isModified('password')) {
-    return;
-  }
+    if (!this.isModified('password')) {
+        return;
+    }
 
-  const bcrypt = require('bcrypt');
-  const saltRounds = 10;
-  this.password = await bcrypt.hash(this.password, saltRounds);
+    const bcrypt = require('bcrypt');
+    const saltRounds = 10;
+    this.password = await bcrypt.hash(this.password, saltRounds);
 });
 
 /**
  * Compare a candidate plain-text password to the stored hash.
  */
-userSchema.methods.matchPassword = async function (candidatePassword) {
-  const bcrypt = require('bcrypt');
-  return bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.matchPassword = async function(candidatePassword) {
+    const bcrypt = require('bcrypt');
+    return bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);

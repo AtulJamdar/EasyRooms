@@ -41,6 +41,15 @@ const calculateCompatibilityScore = (baseUser, candidate) => {
 };
 
 /**
+ * Helper to determine the opposite intent for matching
+ */
+const getTargetIntent = (intent) => {
+    if (intent === "room") return "owner"; // Seekers want Owners
+    if (intent === "owner") return "room"; // Owners want Seekers
+    return "roommate"; // Roommates want Roommates
+};
+
+/**
  * @route   GET /api/matches/:userId
  * @desc    Get top roommate matches for a user (Rule-based)
  */
@@ -56,13 +65,16 @@ const getMatches = async(req, res, next) => {
         const baseUser = await User.findById(userId);
         if (!baseUser) return res.status(404).json({ message: 'User not found' });
 
-        // 🔧 TASK 3 FIX: Filter query to exclude Admins and incomplete profiles
+        // Determine who we should be looking for based on intent
+        const targetIntent = getTargetIntent(baseUser.intent);
+
+        // Filtered Query: Match by intent, exclude admins, exclude blocked, and require college
         const candidates = await User.find({
             _id: { $ne: baseUser._id },
-            role: "user", // HARD EXCLUDE: Admins/RoomOwners
-            isBlocked: false, // Only active users
-            college: { $ne: null }, // Must have college filled
-            course: { $ne: null } // Must have course filled
+            intent: targetIntent,
+            role: "user",
+            isBlocked: false,
+            college: { $ne: null }
         }).select('-password -__v');
 
         const ranked = candidates
@@ -96,13 +108,16 @@ const getMatchesAI = async(req, res, next) => {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // 🔧 TASK 3 FIX: Same strict filter for AI route
+        // Determine target matching intent
+        const targetIntent = getTargetIntent(user.intent);
+
+        // Filtered Query
         const candidates = await User.find({
             _id: { $ne: user._id },
+            intent: targetIntent,
             role: "user",
             isBlocked: false,
-            college: { $ne: null },
-            course: { $ne: null }
+            college: { $ne: null }
         }).select('-password -__v');
 
         const ranked = candidates
@@ -115,10 +130,10 @@ const getMatchesAI = async(req, res, next) => {
             .sort((a, b) => b.score - a.score)
             .slice(0, 20);
 
-        console.log("📊 CLEAN MATCHES FOUND FOR AI:", ranked.length);
+        console.log(`📊 CLEAN MATCHES FOUND FOR AI (${targetIntent}):`, ranked.length);
 
         // AI Re-ranking Block
-        if (process.env.GROK_API_KEY) {
+        if (process.env.GROK_API_KEY && ranked.length > 0) {
             console.log("🔥 AI MATCHING STARTED");
             const top5ForAI = ranked.slice(0, 5);
 
@@ -135,7 +150,7 @@ const getMatchesAI = async(req, res, next) => {
                 console.error("❌ AI MATCHING FAILED:", err.message);
                 console.log("⚠️ FALLBACK TO RULE-BASED MATCHES");
             }
-        } else {
+        } else if (!process.env.GROK_API_KEY) {
             console.log("🚫 AI BYPASSED - Check GROK_API_KEY in .env");
         }
 
