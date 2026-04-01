@@ -2,134 +2,151 @@ const User = require('../models/User');
 
 /**
  * Compatibility scoring for roommate matching.
- *
- * Each factor contributes to an overall score.
+ * Points are awarded based on shared College, Course, Year, Budget, and Habits.
  */
 const calculateCompatibilityScore = (baseUser, candidate) => {
-  let score = 0;
+    let score = 0;
 
-  // 1) College match
-  if (baseUser.college && candidate.college && baseUser.college === candidate.college) {
-    score += 30;
-  }
+    // 1) College match (+30)
+    if (baseUser.college && candidate.college && baseUser.college === candidate.college) {
+        score += 30;
+    }
 
-  // 2) Course match
-  if (baseUser.course && candidate.course && baseUser.course === candidate.course) {
-    score += 25;
-  }
+    // 2) Course match (+25)
+    if (baseUser.course && candidate.course && baseUser.course === candidate.course) {
+        score += 25;
+    }
 
-  // 3) Year match
-  if (baseUser.year && candidate.year && baseUser.year === candidate.year) {
-    score += 15;
-  }
+    // 3) Year match (+15)
+    if (baseUser.year && candidate.year && baseUser.year === candidate.year) {
+        score += 15;
+    }
 
-  // 4) Budget closeness
-  if (typeof baseUser.budget === 'number' && typeof candidate.budget === 'number') {
-    const diff = Math.abs(baseUser.budget - candidate.budget);
-    if (diff <= 500) score += 20;
-    else if (diff <= 1000) score += 10;
-    else if (diff <= 2000) score += 5;
-  }
+    // 4) Budget closeness (Up to +20)
+    if (typeof baseUser.budget === 'number' && typeof candidate.budget === 'number') {
+        const diff = Math.abs(baseUser.budget - candidate.budget);
+        if (diff <= 500) score += 20;
+        else if (diff <= 1000) score += 10;
+        else if (diff <= 2000) score += 5;
+    }
 
-  // 5) Lifestyle habits overlap
-  if (Array.isArray(baseUser.lifestyleHabits) && Array.isArray(candidate.lifestyleHabits)) {
-    const baseSet = new Set(baseUser.lifestyleHabits.map((h) => h.toLowerCase()));
-    const overlap = candidate.lifestyleHabits.filter((h) => baseSet.has(h.toLowerCase()));
-    score += Math.min(overlap.length, 3) * 10; // cap to 30 points
-  }
+    // 5) Lifestyle habits overlap (Up to +30)
+    if (Array.isArray(baseUser.lifestyleHabits) && Array.isArray(candidate.lifestyleHabits)) {
+        const baseSet = new Set(baseUser.lifestyleHabits.map((h) => h.toLowerCase()));
+        const overlap = candidate.lifestyleHabits.filter((h) => baseSet.has(h.toLowerCase()));
+        score += Math.min(overlap.length, 3) * 10;
+    }
 
-  return score;
+    return score;
 };
 
 /**
  * @route   GET /api/matches/:userId
- * @desc    Get top roommate matches for a user
- * @access  Private (owner or admin)
+ * @desc    Get top roommate matches for a user (Rule-based)
  */
-const getMatches = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
+const getMatches = async(req, res, next) => {
+    try {
+        const { userId } = req.params;
 
-    // Ensure user can only request their own matches (unless admin)
-    if (req.user._id.toString() !== userId && !req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized to view matches for this user' });
+        // Authorization: Only user or admin can view
+        if (req.user._id.toString() !== userId && !req.user.isAdmin) {
+            return res.status(403).json({ message: 'Not authorized to view matches' });
+        }
+
+        const baseUser = await User.findById(userId);
+        if (!baseUser) return res.status(404).json({ message: 'User not found' });
+
+        // 🔧 TASK 3 FIX: Filter query to exclude Admins and incomplete profiles
+        const candidates = await User.find({
+            _id: { $ne: baseUser._id },
+            role: "user", // HARD EXCLUDE: Admins/RoomOwners
+            isBlocked: false, // Only active users
+            college: { $ne: null }, // Must have college filled
+            course: { $ne: null } // Must have course filled
+        }).select('-password -__v');
+
+        const ranked = candidates
+            .filter(c => c.budget && c.college) // Extra safety check for valid profiles
+            .map((candidate) => ({
+                user: candidate,
+                score: calculateCompatibilityScore(baseUser, candidate),
+            }))
+            .filter((item) => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 20);
+
+        res.json({ matches: ranked });
+    } catch (error) {
+        next(error);
     }
-
-    const baseUser = await User.findById(userId);
-    if (!baseUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Fetch potential roommates (exclude self)
-    const candidates = await User.find({ _id: { $ne: baseUser._id } }).select(
-      '-password -__v'
-    );
-
-    // Compute compatibility score for each candidate
-    const ranked = candidates
-      .map((candidate) => {
-        const score = calculateCompatibilityScore(baseUser, candidate);
-        return {
-          user: candidate,
-          score,
-        };
-      })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20); // return top 20 matches
-
-    res.json({ matches: ranked });
-  } catch (error) {
-    next(error);
-  }
 };
 
 /**
- * Get top matches (existing logic) and optionally apply AI ranking.
+ * @route   GET /api/matches/:userId/ai
+ * @desc    Get top matches and apply AI fine-tuning via Groq
  */
-const getMatchesAI = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
+const getMatchesAI = async(req, res, next) => {
+    try {
+        const { userId } = req.params;
 
-    // Ensure user can only request their own matches (unless admin)
-    if (req.user._id.toString() !== userId && !req.user.isAdmin) {
-      return res.status(403).json({ message: 'Not authorized to view matches for this user' });
+        if (req.user._id.toString() !== userId && !req.user.isAdmin) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // 🔧 TASK 3 FIX: Same strict filter for AI route
+        const candidates = await User.find({
+            _id: { $ne: user._id },
+            role: "user",
+            isBlocked: false,
+            college: { $ne: null },
+            course: { $ne: null }
+        }).select('-password -__v');
+
+        const ranked = candidates
+            .filter(c => c.budget && c.college)
+            .map((candidate) => ({
+                user: candidate,
+                score: calculateCompatibilityScore(user, candidate),
+            }))
+            .filter((item) => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 20);
+
+        console.log("📊 CLEAN MATCHES FOUND FOR AI:", ranked.length);
+
+        // AI Re-ranking Block
+        if (process.env.GROK_API_KEY) {
+            console.log("🔥 AI MATCHING STARTED");
+            const top5ForAI = ranked.slice(0, 5);
+
+            try {
+                // Ensure grokService is correctly configured for api.groq.com
+                const grokService = require('../services/grokService');
+                const aiRanked = await grokService.rankMatchesWithAI(user, top5ForAI);
+
+                if (aiRanked && aiRanked.length > 0) {
+                    console.log("✅ AI RESPONSE RECEIVED SUCCESSFULLY");
+                    return res.json({ matches: aiRanked });
+                }
+            } catch (err) {
+                console.error("❌ AI MATCHING FAILED:", err.message);
+                console.log("⚠️ FALLBACK TO RULE-BASED MATCHES");
+            }
+        } else {
+            console.log("🚫 AI BYPASSED - Check GROK_API_KEY in .env");
+        }
+
+        res.json({ matches: ranked });
+    } catch (error) {
+        console.error("💀 CRITICAL ROUTE ERROR:", error);
+        next(error);
     }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const candidates = await User.find({ _id: { $ne: user._id } }).select('-password -__v');
-
-    const ranked = candidates
-      .map((candidate) => {
-        const score = calculateCompatibilityScore(user, candidate);
-        return {
-          user: candidate,
-          score,
-        };
-      })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20);
-
-    // If AI ranking is enabled, return AI-sorted results for the top matches.
-    // Otherwise, return the standard ranked results.
-    if (process.env.GROK_API_KEY) {
-      const grokService = require('../services/grokService');
-      const aiRanked = await grokService.rankMatchesWithAI(user, ranked.slice(0, 5));
-      return res.json({ matches: aiRanked });
-    }
-
-    res.json({ matches: ranked });
-  } catch (error) {
-    next(error);
-  }
 };
 
 module.exports = {
-  getMatches,
-  getMatchesAI,
+    getMatches,
+    getMatchesAI,
 };

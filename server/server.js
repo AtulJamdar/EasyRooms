@@ -20,37 +20,51 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Middleware: parse JSON bodies
-app.use(express.json());
+/**
+ * 1. FIX: PAYLOAD TOO LARGE
+ * Increased limits to handle large JSON objects (like image base64 strings)
+ */
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Security middleware
-app.use(helmet());
+/**
+ * 2. FIX: CORS POLICY
+ * Explicitly allow your frontend port. 
+ * Helmet is kept, but configured to be less restrictive for local development images.
+ */
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+}));
 
-// Enable CORS for browser clients
 app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  })
+    cors({
+        origin: ['http://localhost:3000', 'http://localhost:5173'], // Covers React and Vite defaults
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        credentials: true,
+    })
 );
 
 // HTTP request logging in development
 if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
+    app.use(morgan('dev'));
 }
 
-// Basic rate limiting to prevent brute force / spam
+/**
+ * 3. RATE LIMITING
+ * Note: If you are testing heavily, you might want to increase 'max' 
+ * so you don't block yourself while developing.
+ */
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500, // Increased limit for development
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 app.use(limiter);
 
 // Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // API routes
@@ -66,5 +80,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`✅ CORS enabled for http://localhost:3000`);
+    console.log(`📦 Max payload size set to 10MB`);
 });

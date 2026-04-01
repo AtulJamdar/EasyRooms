@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
 
         (async () => {
             try {
-                const res = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000'}/api/auth/profile`, {
+                const res = await fetch(`${import.meta.VITE_API_UR || 'http://localhost:5000'}/api/auth/profile`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();
